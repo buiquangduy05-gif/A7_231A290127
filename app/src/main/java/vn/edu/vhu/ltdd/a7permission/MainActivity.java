@@ -27,7 +27,8 @@ import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
-
+import android.app.PendingIntent;
+import android.content.Intent;
 public class MainActivity extends AppCompatActivity {
 
 
@@ -178,15 +179,33 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void guiThongBao() {
+        // 1. Khởi tạo Intent để trỏ về MainActivity khi người dùng chạm vào thông báo
+        Intent intent = new Intent(this, MainActivity.class);
+        // Tránh mở chồng chéo nhiều màn hình MainActivity nếu app đang mở
+        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+
+        // 2. Tạo PendingIntent bọc Intent trên lại
+        // Dùng FLAG_IMMUTABLE để tương thích hoàn toàn từ Android 12 trở lên
+        PendingIntent pendingIntent = PendingIntent.getActivity(
+                this,
+                0,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+
+        // 3. Xây dựng Notification và gán pendingIntent vào
         NotificationCompat.Builder b = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(android.R.drawable.ic_dialog_info)
                 .setContentTitle(getString(R.string.noti_title))
                 .setContentText(getString(R.string.noti_text))
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-                .setAutoCancel(true);
+                .setContentIntent(pendingIntent) // Sự kiện click mở app
+                .setAutoCancel(true);            // Tự xóa thông báo trên khay sau khi click
+
         try {
             NotificationManagerCompat.from(this).notify(NOTI_ID, b.build());
         } catch (SecurityException e) {
+            // Trường hợp người dùng vừa thu hồi quyền trong Cài đặt lúc app đang chạy
             Log.w(TAG, "Thiếu quyền gửi thông báo", e);
         }
     }
